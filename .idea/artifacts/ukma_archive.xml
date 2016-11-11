@@ -1,0 +1,6 @@
+<component name="ArtifactManager">
+  <artifact type="ejb-jar" name="ukma:archive">
+    <output-path>$PROJECT_DIR$/out/artifacts/ukma_archive</output-path>
+    <root id="archive" name="ukma_archive.jar" />
+  </artifact>
+</component>

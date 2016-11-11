@@ -1,0 +1,321 @@
+Index: src/main/webapp/WEB-INF/views/userPage/editProfile.jsp
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/webapp/WEB-INF/views/userPage/editProfile.jsp	(revision 36e805ae933ea0b648980c646e9739d72d47f810)
++++ src/main/webapp/WEB-INF/views/userPage/editProfile.jsp	(revision )
+@@ -54,8 +54,14 @@
+                 <tr>
+                     <td class="centralWord" colspan="2" align="center">Password change</td>
+                 </tr>
+-
+                 <tr>
++                    <td><label class="labels">Old password:</label></td>
++                    <td><form:input path = "oldPassword" type="password" value=""
++                                    class="form-control form-style"/></td>
++                    <td><form:errors path = "oldPassword" class="regErrors" id="oldPassword.errors"
++                                     cssStyle="color: #ff0000;"/></td>
++                </tr>
++                <tr>
+                     <td><label class="labels">New password:</label></td>
+                     <td><form:input path = "password" type="password" value=""
+                                     class="form-control form-style"/></td>
+@@ -68,14 +74,12 @@
+                                     class="form-control form-style"/></td>
+                     <td><form:errors path = "confPassword" class="regErrors" id="confPassword.errors"
+                                      cssStyle="color: #ff0000;"/></td>
+-
+                 </tr>
+-
+             </table>
+             <div class="form-group">
+-                <div class="col-md-offset-1  col-md-4">
++                <div class="col-md-offset-7  col-md-4">
+                     <button id="change-pass-button" type="submit" value="editProfile"
+-                            class="btn btn-primary btn-block button-style">Change Password
++                            class="btn btn-primary btn-block button-style">Submit
+                     </button>
+                 </div>
+             </div>
+Index: src/main/java/com/ukmaSupport/utils/PasswordChangeValidator.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/com/ukmaSupport/utils/PasswordChangeValidator.java	(revision 36e805ae933ea0b648980c646e9739d72d47f810)
++++ src/main/java/com/ukmaSupport/utils/PasswordChangeValidator.java	(revision )
+@@ -1,17 +1,27 @@
+ package com.ukmaSupport.utils;
+ 
++
++import com.ukmaSupport.services.interfaces.UserService;
++import org.springframework.beans.factory.annotation.Autowired;
+ import org.springframework.stereotype.Component;
+ import org.springframework.validation.Errors;
+ import org.springframework.validation.ValidationUtils;
++import com.ukmaSupport.utils.PasswordEncryptor;
+ 
+ @Component
+ public class PasswordChangeValidator {
+-    public void validate(String pass,String confPass, Errors errors) {
++    @Autowired
++    private UserService userDao;
++    public void validate(String oldPass, String pass,String confPass, String email, Errors errors) {
+         ValidationUtils.rejectIfEmptyOrWhitespace(errors, "password", "valid.password", "Password is required.");
+         ValidationUtils.rejectIfEmptyOrWhitespace(errors, "confPassword", "valid.confPassword", "Confirm password is required.");
++        ValidationUtils.rejectIfEmptyOrWhitespace(errors, "oldPassword", "valid.oldPassword", "Old password is required.");
+ 
+         if (!pass.equals(confPass))
+             errors.rejectValue("confPassword", "valid.confPasswordDiff", "Passwords are different.");
++
++        else if (!PasswordEncryptor.matches(oldPass, userDao.getByEmail(email).getPassword()))
++            errors.rejectValue("oldPassword", "valid.oldPassword", "Incorrect old password.");
+     }
+ 
+     }
+Index: src/main/java/com/ukmaSupport/utils/PasswordEncryptor.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/com/ukmaSupport/utils/PasswordEncryptor.java	(revision 36e805ae933ea0b648980c646e9739d72d47f810)
++++ src/main/java/com/ukmaSupport/utils/PasswordEncryptor.java	(revision )
+@@ -69,6 +69,51 @@
+         }
+     }
+ 
++    public static boolean matches(CharSequence charSequence, String storedPassword) {
++        String[] parts = storedPassword.split(":");
++        int iterations = Integer.parseInt(parts[0]);
++        byte[] salt = null;
++        try {
++            salt = fromHex(parts[1]);
++        } catch (NoSuchAlgorithmException e) {
++            e.printStackTrace();
++        }
++        byte[] hash = null;
++        try {
++            hash = fromHex(parts[2]);
++        } catch (NoSuchAlgorithmException e) {
++            e.printStackTrace();
++        }
++
++        PBEKeySpec spec = new PBEKeySpec((charSequence.toString()).toCharArray(), salt, iterations, hash.length * 8);
++        SecretKeyFactory skf = null;
++        try {
++            skf = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
++        } catch (NoSuchAlgorithmException e) {
++            e.printStackTrace();
++        }
++        byte[] testHash = null;
++        try {
++            testHash = skf.generateSecret(spec).getEncoded();
++        } catch (InvalidKeySpecException e) {
++            e.printStackTrace();
++        }
++
++        int diff = hash.length ^ testHash.length;
++        for (int i = 0; i < hash.length && i < testHash.length; i++) {
++            diff |= hash[i] ^ testHash[i];
++        }
++        return diff == 0;
++    }
++
++    private static byte[] fromHex (String hex)throws NoSuchAlgorithmException
++    {
++        byte[] bytes = new byte[hex.length() / 2];
++        for (int i = 0; i < bytes.length; i++) {
++            bytes[i] = (byte) Integer.parseInt(hex.substring(2 * i, 2 * i + 2), 16);
++        }
++        return bytes;
++    }
+ 
+ 
+ 
+Index: src/main/webapp/resources/css/main.css
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/webapp/resources/css/main.css	(revision 36e805ae933ea0b648980c646e9739d72d47f810)
++++ src/main/webapp/resources/css/main.css	(revision )
+@@ -120,6 +120,12 @@
+ 	margin-top: 30px;
+ }
+ 
++#profEdit{
++	margin-left: 250px;
++	margin-right: 250px;
++	margin-top: 30px;
++}
++
+ .centralWord {
+ 	font-family: "Century Gothic", sans-serif;
+ 	font-size: 36px;
+@@ -144,7 +150,7 @@
+ 	position: absolute;
+ 	z-index: 999;
+ 	padding-left: 15px;
+-	margin-top: -27px;
++	margin-top: 10px;
+ }
+ a img {
+ 	border: none;
+Index: src/main/webapp/WEB-INF/views/adminPage/editAdminProfile.jsp
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/webapp/WEB-INF/views/adminPage/editAdminProfile.jsp	(revision 36e805ae933ea0b648980c646e9739d72d47f810)
++++ src/main/webapp/WEB-INF/views/adminPage/editAdminProfile.jsp	(revision )
+@@ -75,8 +75,14 @@
+                 <tr>
+                     <td class="centralWord" colspan="2" align="center">Password change</td>
+                 </tr>
+-
+                 <tr>
++                    <td><label class="labels">Old password:</label></td>
++                    <td><form:input path = "oldPassword" type="password" value=""
++                                    class="form-control form-style"/></td>
++                    <td><form:errors path = "oldPassword" class="regErrors" id="oldPassword.errors"
++                                     cssStyle="color: #ff0000;"/></td>
++                </tr>
++                <tr>
+                     <td><label class="labels">New password:</label></td>
+                     <td><form:input path="password" type="password" value=""
+                                     class="form-control form-style"/></td>
+@@ -92,9 +98,9 @@
+                 </tr>
+             </table>
+             <div class="form-group">
+-                <div class="col-md-offset-1  col-md-4">
++                <div class="col-md-offset-7  col-md-4">
+                     <button id="change-pass-button" type="submit" value="editAdminProfile"
+-                            class="btn btn-primary btn-block button-style">Change Password
++                            class="btn btn-primary btn-block button-style">Submit
+                     </button>
+                 </div>
+             </div>
+Index: src/main/java/com/ukmaSupport/controllers/AdminController.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/com/ukmaSupport/controllers/AdminController.java	(revision 36e805ae933ea0b648980c646e9739d72d47f810)
++++ src/main/java/com/ukmaSupport/controllers/AdminController.java	(revision )
+@@ -2,7 +2,7 @@
+ 
+ import com.ukmaSupport.models.Auditorium;
+ import com.ukmaSupport.models.Order;
+-import com.ukmaSupport.models.PasswordPair;
++import com.ukmaSupport.models.PasswordTrio;
+ import com.ukmaSupport.models.User;
+ import com.ukmaSupport.services.interfaces.AuditoriumService;
+ import com.ukmaSupport.services.interfaces.OrderService;
+@@ -140,22 +140,26 @@
+ 
+     @RequestMapping(value = "/editAdminProfile", method = RequestMethod.GET)
+     public String viewRegistration(Model model) {
+-        PasswordPair passwordPair = new PasswordPair();
+-        model.addAttribute("passChangeForm", passwordPair);
++        PasswordTrio passwordTrio = new PasswordTrio();
++        model.addAttribute("passChangeForm", passwordTrio);
+         return "adminPage/editAdminProfile";
+     }
+ 
+     @RequestMapping(value = "/editAdminProfile", method = RequestMethod.POST)
+-    public String passChange(@ModelAttribute("passChangeForm") PasswordPair passwordPair, Model model, BindingResult result) {
+-        validator.validate(passwordPair.getPassword(), passwordPair.getConfPassword(), result);
+-        if (result.hasErrors())
+-            return "adminPage/editAdminProfile";
+-        String pass = PasswordEncryptor.encode(passwordPair.getPassword());
++    public String passChange(@ModelAttribute("passChangeForm") PasswordTrio passwordTrio, Model model, BindingResult result) {
+         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+         String name = auth.getName();
+         User user = userService.getByEmail(name);
++        validator.validate(passwordTrio.getOldPassword(), passwordTrio.getPassword(), passwordTrio.getConfPassword(), name, result);
++        if (result.hasErrors())
++            return "adminPage/editAdminProfile";
++
++        String pass = PasswordEncryptor.encode(passwordTrio.getPassword());
++
+         user.setPassword(pass);
+         userService.saveOrUpdate(user);
++
++
+         return "userPage/passwordChangeSuccess";
+     }
+ }
+\ No newline at end of file
+Index: src/main/java/com/ukmaSupport/controllers/EditProfile.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/com/ukmaSupport/controllers/EditProfile.java	(revision 36e805ae933ea0b648980c646e9739d72d47f810)
++++ src/main/java/com/ukmaSupport/controllers/EditProfile.java	(revision )
+@@ -28,23 +28,22 @@
+ 
+     @RequestMapping(method = RequestMethod.GET)
+     public String viewRegistration(Model model) {
+-       PasswordPair passwordPair = new PasswordPair();
+-        model.addAttribute("passChangeForm", passwordPair);
++       PasswordTrio passwordTrio = new PasswordTrio();
++        model.addAttribute("passChangeForm", passwordTrio);
+         return "userPage/editProfile";
+     }
+ 
+ 
+    @RequestMapping(method = RequestMethod.POST)
+-    public String passChange(@ModelAttribute("passChangeForm") PasswordPair passwordPair, Model model, BindingResult result) {
+-
+-
+-        validator.validate(passwordPair.getPassword(), passwordPair.getConfPassword(), result);
+-        if (result.hasErrors())
+-            return "userPage/editProfile";
+-        String pass = PasswordEncryptor.encode(passwordPair.getPassword());
++    public String passChange(@ModelAttribute("passChangeForm") PasswordTrio passwordTrio, Model model, BindingResult result) {
+-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+-        String name = auth.getName();
+-        User user = userDao.getByEmail(name);
++       Authentication auth = SecurityContextHolder.getContext().getAuthentication();
++       String name = auth.getName();
++       User user = userDao.getByEmail(name);
++       validator.validate(passwordTrio.getOldPassword(), passwordTrio.getPassword(), passwordTrio.getConfPassword(), name, result);
++        if (result.hasErrors())
++            return "userPage/editProfile";
++
++        String pass = PasswordEncryptor.encode(passwordTrio.getPassword());
+         user.setPassword(pass);
+         userDao.saveOrUpdate(user);
+ 
+\ No newline at end of file
+Index: src/main/java/com/ukmaSupport/models/PasswordPair.java
+===================================================================
+--- src/main/java/com/ukmaSupport/models/PasswordPair.java	(revision 36e805ae933ea0b648980c646e9739d72d47f810)
++++ src/main/java/com/ukmaSupport/models/PasswordTrio.java	(revision )
+@@ -2,13 +2,21 @@
+ 
+ 
+ 
+-public class PasswordPair {
++public class PasswordTrio {
+ 
++    private String oldPassword;
++
+     private String password;
+ 
+     private String confPassword;
+ 
++    public String getOldPassword() {
++        return oldPassword;
++    }
+ 
++    public void setOldPassword(String oldPassword) {
++        this.oldPassword = oldPassword;
++    }
+ 
+     public String getPassword() {
+         return password;
+\ No newline at end of file

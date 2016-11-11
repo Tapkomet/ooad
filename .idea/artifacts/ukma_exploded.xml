@@ -1,0 +1,6 @@
+<component name="ArtifactManager">
+  <artifact type="exploded-ear" name="ukma:exploded">
+    <output-path>$PROJECT_DIR$/out/artifacts/ukma_exploded</output-path>
+    <root id="root" />
+  </artifact>
+</component>

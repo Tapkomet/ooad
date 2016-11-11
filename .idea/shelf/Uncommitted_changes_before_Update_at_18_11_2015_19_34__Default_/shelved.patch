@@ -1,0 +1,117 @@
+Index: src/main/resources/messages_en.properties
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/resources/messages_en.properties	(revision 5ec4981be462e1f71ae026eb30b20fcc875dc1f7)
++++ src/main/resources/messages_en.properties	(revision )
+@@ -117,6 +117,7 @@
+ assist.CreateOrder=Create Order
+ assist.order.auditorium=Auditorium
+ assist.order.workplace=Workplace
++assist.order.markDone=Mark as Done
+ 
+ 
+ 
+Index: src/main/java/com/ukmaSupport/controllers/AssistController.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/com/ukmaSupport/controllers/AssistController.java	(revision 5ec4981be462e1f71ae026eb30b20fcc875dc1f7)
++++ src/main/java/com/ukmaSupport/controllers/AssistController.java	(revision )
+@@ -225,6 +225,10 @@
+     public String setToDone(@RequestParam("orderid") int id,  Model model) {
+ 
+         Order order = orderService.getById(id);
++        System.out.println(order.getWorkplace());
++        System.out.println(order.getWorkplace_access_num());
++        System.out.println(order.getWorkplace_id());
++
+         order.setStatus(DONE);
+         orderService.createOrUpdate(order);
+ 
+Index: src/main/java/com/ukmaSupport/controllers/UserController.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/com/ukmaSupport/controllers/UserController.java	(revision 5ec4981be462e1f71ae026eb30b20fcc875dc1f7)
++++ src/main/java/com/ukmaSupport/controllers/UserController.java	(revision )
+@@ -155,7 +155,7 @@
+         Order order=orderService.getById(id);
+         System.out.println(""+model.addAttribute("workplace",order.getWorkplace()).toString());
+         model.addAttribute("title",order.getTitle());
+-        model.addAttribute("workplace",order.getWorkplace());
++        model.addAttribute("workplace",workplaceService.getById(order.getWorkplace_id()));
+         model.addAttribute("auditorium",order.getAuditorium());
+         model.addAttribute("content",order.getContent());
+         model.addAttribute("id",order.getId());
+Index: src/main/webapp/WEB-INF/views/assistPage/assistUncomplOrders.jsp
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/webapp/WEB-INF/views/assistPage/assistUncomplOrders.jsp	(revision 5ec4981be462e1f71ae026eb30b20fcc875dc1f7)
++++ src/main/webapp/WEB-INF/views/assistPage/assistUncomplOrders.jsp	(revision )
+@@ -69,7 +69,8 @@
+                     trHTML += "<tr><td>" + order.title + "</td>" +
+                     '   <td>' + order.workplace_access_num + "</td>" +
+                     '   <td>' + formatDate(new Date(order.createdAt), '%d.%M.%Y   %H:%m:%s') + "</td>" +
+-                            '<td><a class="menu-element-li" href = "/myUncomplOrdersDone?orderid='+order.id+'" >Mark as Done</a></td></tr>';
++                            '<td><a class="menu-element-li" href = "/myUncomplOrdersDone?orderid='+order.id+'" ><spring:message
++                                    code="assist.order.markDone"/></a></td></tr>';
+                 });
+                 $('#records_table tbody').empty();
+                 $('#records_table').append(trHTML);
+\ No newline at end of file
+Index: src/main/java/com/ukmaSupport/models/Order.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/com/ukmaSupport/models/Order.java	(revision 5ec4981be462e1f71ae026eb30b20fcc875dc1f7)
++++ src/main/java/com/ukmaSupport/models/Order.java	(revision )
+@@ -6,8 +6,8 @@
+     private int id;
+     private int userId;
+     private int assistantId;
+-    private Workplace workplace;
+     private int workplace_id;
++    private Workplace workplace;
+     private String auditorium;
+     private String workplace_access_num;
+     private String title;
+\ No newline at end of file
+Index: src/main/resources/messages_ua.properties
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/resources/messages_ua.properties	(revision 5ec4981be462e1f71ae026eb30b20fcc875dc1f7)
++++ src/main/resources/messages_ua.properties	(revision )
+@@ -115,4 +115,5 @@
+ assist.Submit=Зберегти
+ assist.CreateOrder=Створити заявку
+ assist.order.auditorium=Аудиторії
+-assist.order.workplace=Робочі місця
+\ No newline at end of file
++assist.order.workplace=Робочі місця
++assist.order.markDone=Відмітити як готове
+\ No newline at end of file
+Index: src/main/java/com/ukmaSupport/dao/impl/OrderDaoImpl.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/com/ukmaSupport/dao/impl/OrderDaoImpl.java	(revision 5ec4981be462e1f71ae026eb30b20fcc875dc1f7)
++++ src/main/java/com/ukmaSupport/dao/impl/OrderDaoImpl.java	(revision )
+@@ -26,7 +26,7 @@
+ 
+     private static final String GET_ALL_ORDERS_BY_USER_ID_STATUS ="SELECT orders.id, orders.user_id, orders.assistant_id, workplace.access_num, orders.title, orders.content, orders.created_at, orders.status FROM orders INNER JOIN workplace ON orders.workplace_id=workplace.id WHERE user_id=? AND status=?";
+ 
+-    private static final String GET_ORDER_BY_ID = "SELECT orders.id, orders.user_id, orders.assistant_id, workplace.access_num, orders.title, orders.content, orders.created_at, orders.status FROM orders INNER JOIN workplace ON orders.workplace_id=workplace.id WHERE orders.id=?";
++    private static final String GET_ORDER_BY_ID = "SELECT orders.id, orders.user_id, orders.assistant_id, orders.workplace_id, workplace.access_num, orders.title, orders.content, orders.created_at, orders.status FROM orders INNER JOIN workplace ON orders.workplace_id=workplace.id WHERE orders.id=?";
+ 
+     private static final String GET_ORDERS_BY_STATUS = "SELECT orders.id, orders.user_id, orders.assistant_id, workplace.access_num, orders.title, orders.content, orders.created_at, orders.status FROM orders INNER JOIN workplace ON orders.workplace_id=workplace.id WHERE status=?";
+ 

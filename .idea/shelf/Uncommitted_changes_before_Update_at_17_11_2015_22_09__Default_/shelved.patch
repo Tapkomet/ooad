@@ -1,0 +1,125 @@
+Index: src/main/java/com/ukmaSupport/controllers/AssistController.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/com/ukmaSupport/controllers/AssistController.java	(revision a3410b4b7a1b08e722a66d516fdde167856b77a1)
++++ src/main/java/com/ukmaSupport/controllers/AssistController.java	(revision )
+@@ -19,6 +19,7 @@
+ import org.springframework.web.bind.annotation.*;
+ import org.springframework.web.context.request.RequestContextHolder;
+ import org.springframework.web.context.request.ServletRequestAttributes;
++import com.ukmaSupport.dao.interfaces.OrderDao;
+ 
+ import javax.servlet.http.HttpSession;
+ import java.sql.Timestamp;
+@@ -34,6 +35,9 @@
+     private OrderService orderService;
+ 
+     @Autowired
++    private OrderDao orderDao;
++
++    @Autowired
+     private WorkplaceService workplaceService;
+ 
+     @Autowired
+@@ -215,6 +219,18 @@
+     @RequestMapping(value = "/assistUserhome", method = RequestMethod.GET)
+     public String listAssistUserAllOrders(ModelMap model) {
+         return "assistPage/assistUserhome";
++    }
++
++    @RequestMapping(value = "/myUncomplOrdersDone", method = RequestMethod.GET)
++    public String setToDone(@RequestParam("orderid") int id,  Model model) {
++
++        Order order = orderService.getById(id);
++        order.setStatus(DONE);
++        orderService.createOrUpdate(order);
++
++
++
++        return "assistPage/assistUncomplOrders";
+     }
+ 
+ }
+Index: src/main/java/com/ukmaSupport/controllers/UserController.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/com/ukmaSupport/controllers/UserController.java	(revision a3410b4b7a1b08e722a66d516fdde167856b77a1)
++++ src/main/java/com/ukmaSupport/controllers/UserController.java	(revision )
+@@ -155,7 +155,6 @@
+     @RequestMapping(value = "editOrder/save/{id}", method = RequestMethod.POST)
+     public String orderEdited(@PathVariable("id") int id,@ModelAttribute("editOrder") Order order, ModelMap model,BindingResult result) {
+         validator.validate(order, result);
+-
+         order.setId(id);
+         order.setCreatedAt(new Timestamp(new java.util.Date().getTime()));
+         orderService.update(order);
+Index: src/main/java/com/ukmaSupport/dao/interfaces/OrderDao.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/com/ukmaSupport/dao/interfaces/OrderDao.java	(revision a3410b4b7a1b08e722a66d516fdde167856b77a1)
++++ src/main/java/com/ukmaSupport/dao/interfaces/OrderDao.java	(revision )
+@@ -22,6 +22,7 @@
+ 
+     List<Order> getAll();
+ 
++
+     List<Order> getAllAssistOrders(int assistid);
+ 
+     List<Order> getByAssistAndStatus(int assistid, String status);
+\ No newline at end of file
+Index: src/main/webapp/WEB-INF/views/assistPage/assistUncomplOrders.jsp
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/webapp/WEB-INF/views/assistPage/assistUncomplOrders.jsp	(revision a3410b4b7a1b08e722a66d516fdde167856b77a1)
++++ src/main/webapp/WEB-INF/views/assistPage/assistUncomplOrders.jsp	(revision )
+@@ -70,7 +70,8 @@
+                 $.each(response, function (i, order) {
+                     trHTML += "<tr><td>" + order.title + "</td>" +
+                     '   <td>' + order.workplace_access_num + "</td>" +
+-                    '   <td>' + formatDate(new Date(order.createdAt), '%d.%M.%Y   %H:%m:%s') + "</td></tr>";
++                    '   <td>' + formatDate(new Date(order.createdAt), '%d.%M.%Y   %H:%m:%s') + "</td>" +
++                            '<td><a class="menu-element-li" href = "/myUncomplOrdersDone?orderid='+order.id+'" >Mark as Done</a></td></tr>';
+                 });
+                 $('#records_table tbody').empty();
+                 $('#records_table').append(trHTML);
+@@ -129,6 +130,7 @@
+                 <th class="no-sort">Title</th>
+                 <th class="no-sort">Auditorium</th>
+                 <th>Date</th>
++                <th></th>
+             </tr>
+             </thead>
+         </table>
+\ No newline at end of file
+Index: src/main/java/com/ukmaSupport/dao/impl/OrderDaoImpl.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/com/ukmaSupport/dao/impl/OrderDaoImpl.java	(revision a3410b4b7a1b08e722a66d516fdde167856b77a1)
++++ src/main/java/com/ukmaSupport/dao/impl/OrderDaoImpl.java	(revision )
+@@ -38,7 +38,7 @@
+ 
+     private static final String INSERT_QUERY = "INSERT INTO orders (user_id, assistant_id, workplace_id, title, content, created_at, status) VALUES(?,?,?,?,?,?,?)";
+ 
+-    private static final String UPDATE_QUERY = "UPDATE orders SET user_id=?, assistant_id=?, workplace_id=(SELECT workplace.id FROM workplace WHERE workplace.access_num=?), title=?, content=?, created_at=?, status=? WHERE id=?";
++    private static final String UPDATE_QUERY = "UPDATE orders SET user_id=?, assistant_id=?, workplace_id=?, title=?, content=?, created_at=?, status=? WHERE id=?";
+ 
+     private static final String UPDATE = "UPDATE orders SET title=?, content=?, created_at=? WHERE id=?";
+ 
+@@ -90,6 +90,7 @@
+     public void update(Order order) {
+         jdbcTemplate.update(UPDATE,order.getTitle(),order.getContent(),order.getCreatedAt(),order.getId());
+     }
++
+     @Override
+     public void delete(int id) {
+         jdbcTemplate.update(DELETE_ORDER, id);

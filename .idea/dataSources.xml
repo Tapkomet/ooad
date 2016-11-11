@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="DataSourceManagerImpl" format="xml" hash="3059226942">
+    <data-source source="LOCAL" name="PostgreSQL - d3n5tjmb82o7ko@ec2-54-217-208-102.eu-west-1.compute.amazonaws.com" uuid="32867ace-9050-4236-9557-3e82fa4b2ddc">
+      <driver-ref>postgresql</driver-ref>
+      <synchronize>true</synchronize>
+      <jdbc-driver>org.postgresql.Driver</jdbc-driver>
+      <jdbc-url>jdbc:postgresql://ec2-54-217-208-102.eu-west-1.compute.amazonaws.com:5432/d3n5tjmb82o7ko?ssl=true&amp;sslfactory=org.postgresql.ssl.NonValidatingFactory</jdbc-url>
+    </data-source>
+    <data-source source="LOCAL" name="PostgreSQL - council@localhost" uuid="33f3f6be-92ba-4f25-aa00-ff6bf826efa2">
+      <driver-ref>postgresql</driver-ref>
+      <synchronize>true</synchronize>
+      <jdbc-driver>org.postgresql.Driver</jdbc-driver>
+      <jdbc-url>jdbc:postgresql://localhost:5433/council</jdbc-url>
+    </data-source>
+  </component>
+</project>

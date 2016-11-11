@@ -1,0 +1,562 @@
+Index: src/main/java/com/ukmaSupport/controllers/EditProfile.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/com/ukmaSupport/controllers/EditProfile.java	(revision )
++++ src/main/java/com/ukmaSupport/controllers/EditProfile.java	(revision )
+@@ -0,0 +1,29 @@
++package com.ukmaSupport.controllers;
++
++import com.ukmaSupport.mailService.templates.RegistrationMail;
++import com.ukmaSupport.models.*;
++import com.ukmaSupport.services.interfaces.UserService;
++import com.ukmaSupport.utils.Constants;
++import com.ukmaSupport.utils.RegistrationValidator;
++import com.ukmaSupport.utils.PasswordEncryptor;
++import org.springframework.beans.factory.annotation.Autowired;
++import org.springframework.beans.factory.annotation.Qualifier;
++import org.springframework.stereotype.Controller;
++import org.springframework.ui.Model;
++import org.springframework.validation.BindingResult;
++import org.springframework.web.bind.annotation.ModelAttribute;
++import org.springframework.web.bind.annotation.RequestMapping;
++import org.springframework.web.bind.annotation.RequestMethod;
++
++@Controller
++@RequestMapping(value = "/editProfile")
++public class EditProfile {
++
++
++    @RequestMapping(method = RequestMethod.GET)
++    public String viewRegistration(Model model) {
++        return "userPage/editProfile";
++    }
++
++
++}
+\ No newline at end of file
+Index: src/main/java/com/ukmaSupport/controllers/LabAssistController.java
+===================================================================
+--- src/main/java/com/ukmaSupport/controllers/LabAssistController.java	(date 1447348413000)
++++ src/main/java/com/ukmaSupport/controllers/LabAssistController.java	(date 1447348413000)
+@@ -1,84 +0,0 @@
+-package com.ukmaSupport.controllers;
+-
+-import com.ukmaSupport.models.Order;
+-import com.ukmaSupport.services.interfaces.OrderService;
+-import org.springframework.beans.factory.annotation.Autowired;
+-import org.springframework.stereotype.Controller;
+-import org.springframework.ui.Model;
+-import org.springframework.ui.ModelMap;
+-import org.springframework.validation.BindingResult;
+-import org.springframework.web.bind.annotation.RequestMapping;
+-import org.springframework.web.bind.annotation.RequestMethod;
+-import org.springframework.web.context.request.RequestContextHolder;
+-import org.springframework.web.context.request.ServletRequestAttributes;
+-
+-import javax.servlet.http.HttpSession;
+-import java.util.List;
+-
+-
+-@Controller
+-public class LabAssistController {
+-
+-    @Autowired
+-    private OrderService orderDao;
+-
+-    @Autowired
+-    private UserController userController;
+-
+-
+-    @RequestMapping(value = "/allAssistOrders", method = RequestMethod.POST)
+- //   @ResponseBody
+-    public String showAllAssistOrders(Model model) {
+-        ServletRequestAttributes attr = (ServletRequestAttributes) RequestContextHolder.currentRequestAttributes();
+-        HttpSession session = attr.getRequest().getSession();
+-        int assistid = (Integer) session.getAttribute("id");
+-
+-        List<Order> orders = orderDao.getByAssist(assistid);
+-        model.addAttribute("assistOrders", orders);
+-        return "assistPage/assistHomePage";
+-    }
+-
+-    @RequestMapping(value = "/assistCompletedOrders", method = RequestMethod.POST)
+-  //  @ResponseBody
+-    public String showAsistCompletedOrders(Model model) {
+-        ServletRequestAttributes attr = (ServletRequestAttributes) RequestContextHolder.currentRequestAttributes();
+-        HttpSession session = attr.getRequest().getSession();
+-        int assistid = (Integer) session.getAttribute("id");
+-
+-        List<Order> orders = orderDao.getByAssistAndStatus(assistid, "Done");
+-        model.addAttribute("asistCompletedOrders", orders);
+-        return "assistPage/assistHomePage";
+-    }
+-
+-    @RequestMapping(value = "/assistUncompletedOrders", method = RequestMethod.POST)
+-  //  @ResponseBody
+-    public String showAssistUncompletedOrders(Model model) {
+-        ServletRequestAttributes attr = (ServletRequestAttributes) RequestContextHolder.currentRequestAttributes();
+-        HttpSession session = attr.getRequest().getSession();
+-        int assistid = (Integer) session.getAttribute("id");
+-
+-        List<Order> orders = orderDao.getByAssistAndStatus(assistid, "Undone");
+-        model.addAttribute("asistUncompletedOrders", orders);
+-        return "assistPage/assistHomePage";
+-    }
+-
+-    @RequestMapping(value = "/editAssistProfile" , method = RequestMethod.POST)
+-   // @ResponseBody
+-    public String editProfile(ModelMap model) {
+-       return userController.editProfile(model);
+-    }
+-
+-    @RequestMapping(value = "/createAssistOrder" , method = RequestMethod.GET)
+-//    @ResponseBody
+-    public String createAssistOrder(ModelMap model) {
+-        return userController.createOrder(model);
+-    }
+-
+-    @RequestMapping(value = "/createAssistOrder" , method = RequestMethod.POST)
+- //   @ResponseBody
+-    public String createAssistOrderPost(Order order,ModelMap model, BindingResult result) {
+-        return userController.createOrderPost(order, model, result);
+-    }
+-
+-
+-}
+Index: src/main/java/com/ukmaSupport/dao/interfaces/OrderDao.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/com/ukmaSupport/dao/interfaces/OrderDao.java	(date 1447348413000)
++++ src/main/java/com/ukmaSupport/dao/interfaces/OrderDao.java	(revision )
+@@ -5,7 +5,6 @@
+ import java.util.List;
+ 
+ public interface OrderDao {
+-    /**/
+ 
+     Order getById(int id);
+ 
+@@ -20,10 +19,4 @@
+     void delete(int id);
+ 
+     List<Order> getAll();
+-
+-    List<Order> getByUserAndStatus(int userid, String status);
+-
+-    List<Order> getByAssistAndStatus(int assistid, String status);
+-
+-    List<Order> getByAssist(int assistid);
+ }
+\ No newline at end of file
+Index: src/main/webapp/WEB-INF/views/userPage/editProfile.jsp
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/webapp/WEB-INF/views/userPage/editProfile.jsp	(date 1447348413000)
++++ src/main/webapp/WEB-INF/views/userPage/editProfile.jsp	(revision )
+@@ -1,9 +1,61 @@
+-<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+-<html>
++<%@ page language="java" pageEncoding="UTF-8" contentType="text/html;charset=utf-8" %>
++<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
++<%@ taglib prefix="form" uri="http://www.springframework.org/tags/form" %>
++<%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
++<html xmlns:th="http://www.thymeleaf.org">
+ <head>
+-    <title>Eit Profile</title>
++    <meta http-equiv = "Content-Type" content="text/html; charset=utf-8" />
++    <title>Profile edit</title>
++    <link rel="Shortcut Icon" href="" type="image/x-icon" />
++    <link rel="stylesheet" href="../../../resources/css/bootstrap.css">
++    <link rel="stylesheet" href="../../../resources/css/main.css" type="text/css" media="screen" />
++    <script src="../../../resources/js/jquery-1.11.3.js"></script>
++    <script src="../../../resources/js/bootstrap.min.js"></script>
++    <script>
++        jQuery( function($) {
++            $('tbody tr[data-href]').addClass('clickable').click( function() {
++                window.location = $(this).attr('data-href');
++            });
++        });
++    </script>
+ </head>
++
+ <body>
+ 
++<div id="wrap">
++    <nav id="header">
++        <div class="container-fluid">
++            <div class="navbar-header">
++                <a href=""><img id="logo" alt="brand" src="../../../resources/img/logo.png"></a>
++            </div>
++            <div class="collapse navbar-collapse">
++                <ul class="nav navbar-nav navbar-right">
++                    <li class="dropdown">
++                        <a class="dropdown-toggle menu-element" data-toggle="dropdown" href="#"> My orders<b class="caret"></b></a>
++                        <ul class="dropdown-menu">
++                            <li class="drop-menu-element"><a class="menu-element-li" href="/complited">Completed orders</a></li>
++                            <li class="drop-menu-element"><a class="menu-element-li" href="/uncomplited">Uncompleted orders</a></li>
++                        </ul>
++                    </li>
++                    <li><a id = "editProfile" class="menu-element" href="/editProfile">Edit profile</a></li>
++                    <li><a class="menu-element" href="#">Log out</a></li>
++                </ul>
++            </div>
++        </div>
++    </nav>
++
++    <div>
++        <p id="hello">Hello, you may edit your e-mail or your password here.</p>
++    </div>
++
++
++
++    <div class="navbar-fixed-bottom">
++        <div class="thick"></div>
++        <div class="thin"></div>
++        <div><p class="footertext"> © 2015 All Rights Reserved</p></div>
++    </div>
++
++</div>
+ </body>
+ </html>
+Index: src/main/java/com/ukmaSupport/controllers/Registration.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/com/ukmaSupport/controllers/Registration.java	(date 1447348413000)
++++ src/main/java/com/ukmaSupport/controllers/Registration.java	(revision )
+@@ -1,11 +1,11 @@
+ package com.ukmaSupport.controllers;
+ 
+ import com.ukmaSupport.mailService.templates.RegistrationMail;
+-import com.ukmaSupport.models.User;
++import com.ukmaSupport.models.*;
+ import com.ukmaSupport.services.interfaces.UserService;
+ import com.ukmaSupport.utils.Constants;
+-import com.ukmaSupport.utils.PasswordEncryptor;
+ import com.ukmaSupport.utils.RegistrationValidator;
++import com.ukmaSupport.utils.PasswordEncryptor;
+ import org.springframework.beans.factory.annotation.Autowired;
+ import org.springframework.beans.factory.annotation.Qualifier;
+ import org.springframework.stereotype.Controller;
+\ No newline at end of file
+Index: src/main/webapp/WEB-INF/views/adminPage/users.jsp
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/webapp/WEB-INF/views/adminPage/users.jsp	(date 1447348413000)
++++ src/main/webapp/WEB-INF/views/adminPage/users.jsp	(revision )
+@@ -43,11 +43,11 @@
+                                 class="caret"></b></a>
+                         <ul class="dropdown-menu">
+                             <li><a class="menu-element-li" href="/allOrders">All orders</a></li>
+-                            <li><a class="menu-element-li" href="/completedOrders">Complited orders</a></li>
+-                            <li><a class="menu-element-li" href="/uncompletedOrders">Uncomplited orders</a></li>
++                            <li><a class="menu-element-li" href="/completedOrders">Completed orders</a></li>
++                            <li><a class="menu-element-li" href="/uncompletedOrders">Uncompleted orders</a></li>
+                         </ul>
+                     </li>
+-                    <li><a class="menu-element" href="#">Edit profile</a></li>
++                    <li><a id = "editProfile" class="menu-element" href="/editProfile">Edit profile</a></li>
+                     <li><a class="menu-element" href="#">Log out</a></li>
+                 </ul>
+             </div>
+Index: src/main/webapp/WEB-INF/views/assistPage/assistHomePage.jsp
+===================================================================
+--- src/main/webapp/WEB-INF/views/assistPage/assistHomePage.jsp	(date 1447348413000)
++++ src/main/webapp/WEB-INF/views/assistPage/assistHomePage.jsp	(date 1447348413000)
+@@ -1,9 +0,0 @@
+-<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+-<html>
+-<head>
+-    <title>Home</title>
+-</head>
+-<body>
+-
+-</body>
+-</html>
+Index: src/main/java/com/ukmaSupport/services/SpringSecurityEncoder.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/com/ukmaSupport/services/SpringSecurityEncoder.java	(date 1447348413000)
++++ src/main/java/com/ukmaSupport/services/SpringSecurityEncoder.java	(revision )
+@@ -1,15 +1,14 @@
+ package com.ukmaSupport.services;
+ 
+-import com.ukmaSupport.models.User;
+ import org.springframework.security.crypto.password.PasswordEncoder;
+ import org.springframework.stereotype.Service;
+-
+-import javax.crypto.SecretKeyFactory;
+-import javax.crypto.spec.PBEKeySpec;
+ import java.math.BigInteger;
+ import java.security.NoSuchAlgorithmException;
+ import java.security.SecureRandom;
+ import java.security.spec.InvalidKeySpecException;
++import javax.crypto.SecretKeyFactory;
++import javax.crypto.spec.PBEKeySpec;
++import com.ukmaSupport.models.User;
+ 
+ 
+ 
+Index: src/main/webapp/WEB-INF/views/userPage/userHomePage.jsp
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/webapp/WEB-INF/views/userPage/userHomePage.jsp	(date 1447348413000)
++++ src/main/webapp/WEB-INF/views/userPage/userHomePage.jsp	(revision )
+@@ -33,11 +33,11 @@
+                     <li class="dropdown">
+                         <a class="dropdown-toggle menu-element" data-toggle="dropdown" href="#"> My orders<b class="caret"></b></a>
+                         <ul class="dropdown-menu">
+-                            <li class="drop-menu-element"><a class="menu-element-li" href="/complited">Complited orders</a></li>
+-                            <li class="drop-menu-element"><a class="menu-element-li" href="/uncomplited">Uncomplited orders</a></li>
++                            <li class="drop-menu-element"><a class="menu-element-li" href="/complited">Completed orders</a></li>
++                            <li class="drop-menu-element"><a class="menu-element-li" href="/uncomplited">Uncompleted orders</a></li>
+                         </ul>
+                     </li>
+-                    <li><a class="menu-element" href="#">Edit profile</a></li>
++                    <li><a id = "editProfile" class="menu-element" href="/editProfile">Edit profile</a></li>
+                     <li><a class="menu-element" href="#">Log out</a></li>
+                 </ul>
+             </div>
+Index: src/main/webapp/WEB-INF/views/adminPage/auditoriumsList.jsp
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/webapp/WEB-INF/views/adminPage/auditoriumsList.jsp	(date 1447348413000)
++++ src/main/webapp/WEB-INF/views/adminPage/auditoriumsList.jsp	(revision )
+@@ -47,7 +47,7 @@
+                             <li><a class="menu-element-li" href="/uncompletedOrders">Uncomplited orders</a></li>
+                         </ul>
+                     </li>
+-                    <li><a class="menu-element" href="#">Edit profile</a></li>
++                    <li><a id = "editProfile" class="menu-element" href="/editProfile">Edit profile</a></li>
+                     <li><a class="menu-element" href="#">Log out</a></li>
+                 </ul>
+             </div>
+\ No newline at end of file
+Index: src/main/webapp/WEB-INF/views/adminPage/auditoriums.jsp
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/webapp/WEB-INF/views/adminPage/auditoriums.jsp	(date 1447348413000)
++++ src/main/webapp/WEB-INF/views/adminPage/auditoriums.jsp	(revision )
+@@ -47,7 +47,7 @@
+                             <li><a class="menu-element-li" href="/uncompletedOrders">Uncomplited orders</a></li>
+                         </ul>
+                     </li>
+-                    <li><a class="menu-element" href="#">Edit profile</a></li>
++                    <li><a id = "editProfile" class="menu-element" href="/editProfile">Edit profile</a></li>
+                     <li><a class="menu-element" href="#">Log out</a></li>
+                 </ul>
+             </div>
+Index: src/main/java/com/ukmaSupport/controllers/UserController.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/com/ukmaSupport/controllers/UserController.java	(date 1447348413000)
++++ src/main/java/com/ukmaSupport/controllers/UserController.java	(revision )
+@@ -50,6 +50,7 @@
+         return "userPage/createOrderPage";
+     }
+ 
++
+     @RequestMapping(value = "/createOrder", method = RequestMethod.POST)
+     public String createOrderPost(@ModelAttribute("newOrder") Order order,ModelMap model, BindingResult result) {
+         ServletRequestAttributes attr = (ServletRequestAttributes) RequestContextHolder.currentRequestAttributes();
+Index: src/main/java/com/ukmaSupport/services/interfaces/UserService.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/com/ukmaSupport/services/interfaces/UserService.java	(date 1447348413000)
++++ src/main/java/com/ukmaSupport/services/interfaces/UserService.java	(revision )
+@@ -6,8 +6,6 @@
+ 
+ public interface UserService {
+ 
+-    /**/
+-
+     User getById(int id);
+ 
+     void delete(int id);
+Index: src/main/java/com/ukmaSupport/services/UserServices.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/com/ukmaSupport/services/UserServices.java	(date 1447348413000)
++++ src/main/java/com/ukmaSupport/services/UserServices.java	(revision )
+@@ -1,9 +1,9 @@
+ package com.ukmaSupport.services;
+ 
+ import com.ukmaSupport.services.interfaces.UserService;
++import org.springframework.security.core.userdetails.User;
+ import org.springframework.beans.factory.annotation.Autowired;
+ import org.springframework.security.core.GrantedAuthority;
+-import org.springframework.security.core.userdetails.User;
+ import org.springframework.security.core.userdetails.UserDetails;
+ import org.springframework.security.core.userdetails.UserDetailsService;
+ import org.springframework.security.core.userdetails.UsernameNotFoundException;
+Index: src/main/java/com/ukmaSupport/services/impl/OrderServiceImpl.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/com/ukmaSupport/services/impl/OrderServiceImpl.java	(date 1447348413000)
++++ src/main/java/com/ukmaSupport/services/impl/OrderServiceImpl.java	(revision )
+@@ -12,10 +12,9 @@
+ 
+ @Service("orderService")
+ public class OrderServiceImpl implements OrderService {
+-    /**/
+ 
+     @Autowired
+-    private static OrderDao orderDao;
++    private OrderDao orderDao;
+ 
+     @Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+     @Override
+@@ -57,20 +56,5 @@
+     @Override
+     public List<Order> getAll() {
+         return orderDao.getAll();
+-    }
+-
+-    @Override
+-    public List<Order> getByUserAndStatus(int userid, String status) {
+-        return orderDao.getByUserAndStatus(userid, status);
+-    }
+-
+-    @Override
+-    public List<Order> getByAssistAndStatus(int assistid, String status) {
+-        return orderDao.getByAssistAndStatus(assistid, status);
+-    }
+-
+-    @Override
+-    public List<Order> getByAssist(int assistid) {
+-        return orderDao.getByAssist(assistid);
+     }
+ }
+Index: src/main/java/com/ukmaSupport/services/interfaces/OrderService.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/com/ukmaSupport/services/interfaces/OrderService.java	(date 1447348413000)
++++ src/main/java/com/ukmaSupport/services/interfaces/OrderService.java	(revision )
+@@ -19,10 +19,4 @@
+     void delete(int id);
+ 
+     List<Order> getAll();
+-
+-    List<Order> getByUserAndStatus(int userid, String status);
+-
+-    List<Order> getByAssistAndStatus(int assistid, String status);
+-
+-    List<Order> getByAssist(int assistid);
+ }
+Index: src/main/java/com/ukmaSupport/dao/impl/OrderDaoImpl.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/com/ukmaSupport/dao/impl/OrderDaoImpl.java	(date 1447348413000)
++++ src/main/java/com/ukmaSupport/dao/impl/OrderDaoImpl.java	(revision )
+@@ -8,17 +8,12 @@
+ import org.springframework.jdbc.core.RowMapper;
+ import org.springframework.stereotype.Repository;
+ 
+-import java.sql.Connection;
+-import java.sql.PreparedStatement;
+-import java.sql.ResultSet;
+-import java.sql.SQLException;
++import java.sql.*;
+ import java.util.List;
+ 
+ @Repository("orderDao")
+ public class OrderDaoImpl implements OrderDao {
+ 
+-    /**/
+-
+     @Autowired
+     private JdbcTemplate jdbcTemplate;
+ 
+@@ -26,12 +21,8 @@
+ 
+     private static final String GET_ALL_ORDERS_BY_USER_ID = "SELECT orders.id, orders.user_id, orders.assistant_id, workplace.access_num, orders.title, orders.content, orders.created_at, orders.status FROM orders INNER JOIN workplace ON orders.workplace_id=workplace.id WHERE user_id=?";
+ 
+-    private static final String GET_ORDERS_BY_USER_AND_STATUS = "SELECT orders.id, orders.user_id, orders.assistant_id, workplace.access_num, orders.title, orders.content, orders.created_at, orders.status FROM orders INNER JOIN workplace ON orders.workplace_id=workplace.id WHERE orders.user_id=? AND orders.status=?";
++    private static final String GET_ALL_ORDERS_BY_USER_ID_STATUS ="SELECT orders.id, orders.user_id, orders.assistant_id, workplace.access_num, orders.title, orders.content, orders.created_at, orders.status FROM orders INNER JOIN workplace ON orders.workplace_id=workplace.id WHERE user_id=? AND status=?";
+ 
+-    private static final String GET_ORDERS_BY_ASSIST_AND_STATUS = "SELECT orders.id, orders.user_id, workplace.access_num, orders.title, orders.content, orders.created_at, orders.status FROM orders INNER JOIN workplace ON orders.workplace_id=workplace.id WHERE orders.assistant_id=? AND orders.status=?";
+-
+-    private static final String GET_ORDERS_BY_ASSIST = "SELECT orders.id, orders.user_id, workplace.access_num, orders.title, orders.content, orders.created_at, orders.status FROM orders INNER JOIN workplace ON orders.workplace_id=workplace.id WHERE orders.assistant_id=?";
+-
+     private static final String GET_ORDER_BY_ID = "SELECT orders.id, orders.user_id, orders.assistant_id, workplace.access_num, orders.title, orders.content, orders.created_at, orders.status FROM orders INNER JOIN workplace ON orders.workplace_id=workplace.id WHERE id=?";
+ 
+     private static final String GET_ORDERS_BY_STATUS = "SELECT orders.id, orders.user_id, orders.assistant_id, workplace.access_num, orders.title, orders.content, orders.created_at, orders.status FROM orders INNER JOIN workplace ON orders.workplace_id=workplace.id WHERE status=?";
+@@ -57,10 +48,9 @@
+     public List<Order> getByUserId(int user_id) {
+         return jdbcTemplate.query(GET_ALL_ORDERS_BY_USER_ID, new Object[]{user_id}, rowMapper);
+     }
+-
+     @Override
+-    public List<Order> getUserStatus(int user_id, String status) {
++    public List<Order> getUserStatus(int user_id,String status) {
+-        return null;
++        return jdbcTemplate.query(GET_ALL_ORDERS_BY_USER_ID_STATUS, new Object[]{user_id,status}, rowMapper);
+     }
+ 
+     @Override
+@@ -96,20 +86,6 @@
+     @Override
+     public List<Order> getAll() {
+         return jdbcTemplate.query(GET_ALL_ORDERS, rowMapper);
+-    }
+-
+-    public List<Order> getByUserAndStatus(int userid, String status){
+-        return jdbcTemplate.query(GET_ORDERS_BY_USER_AND_STATUS, rowMapper);
+-    }
+-
+-    @Override
+-    public List<Order> getByAssistAndStatus(int assistid, String status) {
+-        return jdbcTemplate.query(GET_ORDERS_BY_ASSIST_AND_STATUS, rowMapper);
+-    }
+-
+-    @Override
+-    public List<Order> getByAssist(int assistid) {
+-        return jdbcTemplate.query(GET_ORDERS_BY_ASSIST, rowMapper);
+     }
+ 
+     private static final RowMapper<Order> rowMapper = new RowMapper<Order>() {
+Index: src/main/webapp/WEB-INF/views/adminPage/orders.jsp
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/webapp/WEB-INF/views/adminPage/orders.jsp	(date 1447348413000)
++++ src/main/webapp/WEB-INF/views/adminPage/orders.jsp	(revision )
+@@ -47,7 +47,7 @@
+                             <li><a class="menu-element-li" href="/uncompletedOrders">Uncomplited orders</a></li>
+                         </ul>
+                     </li>
+-                    <li><a class="menu-element" href="#">Edit profile</a></li>
++                    <li><a id = "editProfile" class="menu-element" href="/editProfile">Edit profile</a></li>
+                     <li><a class="menu-element" href="#">Log out</a></li>
+                 </ul>
+             </div>

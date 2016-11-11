@@ -1,0 +1,233 @@
+Index: src/main/webapp/WEB-INF/views/registration/registration.jsp
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/webapp/WEB-INF/views/registration/registration.jsp	(revision 32e00d3d374b04a91da57299baac03397de67f12)
++++ src/main/webapp/WEB-INF/views/registration/registration.jsp	(revision )
+@@ -28,7 +28,7 @@
+         <form:form id="userForm" action="register" method="post" commandName="userForm">
+             <table border="0">
+                 <tr>
+-                    <td class="centralWord" colspan="2" align="center">Registration</td>
++                    <td class="centralWord" colspan="2" align="center">Registration </td>
+                 </tr>
+ 
+                 <tr>
+Index: src/main/webapp/WEB-INF/views/userPage/editProfile.jsp
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/webapp/WEB-INF/views/userPage/editProfile.jsp	(revision 32e00d3d374b04a91da57299baac03397de67f12)
++++ src/main/webapp/WEB-INF/views/userPage/editProfile.jsp	(revision )
+@@ -30,13 +30,7 @@
+             </div>
+             <div class="collapse navbar-collapse">
+                 <ul class="nav navbar-nav navbar-right">
+-                    <li class="dropdown">
+-                        <a class="dropdown-toggle menu-element" data-toggle="dropdown" href="#"> My orders<b class="caret"></b></a>
+-                        <ul class="dropdown-menu">
+-                            <li class="drop-menu-element"><a class="menu-element-li" href="/complited">Completed orders</a></li>
+-                            <li class="drop-menu-element"><a class="menu-element-li" href="/uncomplited">Uncompleted orders</a></li>
+-                        </ul>
+-                    </li>
++                    <li><a id = "userHome " class="menu-element" href="/userhome">User Home</a></li>
+                     <li><a id = "editProfile" class="menu-element" href="/editProfile">Edit profile</a></li>
+                     <li><a class="menu-element" href="#">Log out</a></li>
+                 </ul>
+@@ -45,7 +39,11 @@
+     </nav>
+ 
+     <div>
+-        <p id="hello">Hello, you may edit your e-mail or your password here.</p>
++        <p id="hello"> Hello there ${greetings.name} ${greetings.email}  </p>
++        <form:form id ="greetings" commandName="greetings">
++            <form:input path="name" value=""></form:input>
++            <form:input path="email" value=""></form:input>
++        </form:form>
+     </div>
+ 
+     <div id="profEdit">
+Index: src/main/java/com/ukmaSupport/controllers/Registration.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/com/ukmaSupport/controllers/Registration.java	(revision 32e00d3d374b04a91da57299baac03397de67f12)
++++ src/main/java/com/ukmaSupport/controllers/Registration.java	(revision )
+@@ -51,4 +51,5 @@
+ 
+         return "registration/registrationSuccess";
+     }
+-}
+\ No newline at end of file
++}
++
+Index: src/main/java/com/ukmaSupport/utils/PasswordChangeValidator.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/com/ukmaSupport/utils/PasswordChangeValidator.java	(revision 32e00d3d374b04a91da57299baac03397de67f12)
++++ src/main/java/com/ukmaSupport/utils/PasswordChangeValidator.java	(revision )
+@@ -6,21 +6,21 @@
+ import org.springframework.stereotype.Component;
+ import org.springframework.validation.Errors;
+ import org.springframework.validation.ValidationUtils;
+-import com.ukmaSupport.utils.PasswordEncryptor;
++import com.ukmaSupport.models.PasswordTrio;
+ 
+ @Component
+ public class PasswordChangeValidator {
+     @Autowired
+     private UserService userDao;
+-    public void validate(String oldPass, String pass,String confPass, String email, Errors errors) {
++    public void validate(PasswordTrio passTrio, String email, Errors errors) {
+         ValidationUtils.rejectIfEmptyOrWhitespace(errors, "password", "valid.password", "Password is required.");
+         ValidationUtils.rejectIfEmptyOrWhitespace(errors, "confPassword", "valid.confPassword", "Confirm password is required.");
+         ValidationUtils.rejectIfEmptyOrWhitespace(errors, "oldPassword", "valid.oldPassword", "Old password is required.");
+ 
+-        if (!pass.equals(confPass))
++        if (!(passTrio.getPassword()).equals(passTrio.getConfPassword()))
+             errors.rejectValue("confPassword", "valid.confPasswordDiff", "Passwords are different.");
+ 
+-        else if (!PasswordEncryptor.matches(oldPass, userDao.getByEmail(email).getPassword()))
++        else if (!PasswordEncryptor.matches(passTrio.getOldPassword(), userDao.getByEmail(email).getPassword()))
+             errors.rejectValue("oldPassword", "valid.oldPassword", "Incorrect old password.");
+     }
+ 
+Index: src/main/webapp/WEB-INF/views/userPage/passwordChangeSuccess.jsp
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/webapp/WEB-INF/views/userPage/passwordChangeSuccess.jsp	(revision 32e00d3d374b04a91da57299baac03397de67f12)
++++ src/main/webapp/WEB-INF/views/userPage/passwordChangeSuccess.jsp	(revision )
+@@ -9,11 +9,11 @@
+ <div align="center">
+     <table border="0">
+         <tr>
+-            <td colspan="2" align="center"><h2>Password change successful</h2></td>
++            <td colspan="2" align="center">${greetings.name}<h2>Password change successful</h2></td>
+         </tr>
+         <tr>
+             <td colspan="2" align="center">
+-                <h3>You may now use the new pass to log in </h3>
++                <h3>You may now use the new pass to log in</h3>
+             </td>
+         </tr>
+ 
+\ No newline at end of file
+Index: src/main/java/com/ukmaSupport/controllers/AdminController.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/com/ukmaSupport/controllers/AdminController.java	(revision 32e00d3d374b04a91da57299baac03397de67f12)
++++ src/main/java/com/ukmaSupport/controllers/AdminController.java	(revision )
+@@ -150,7 +150,7 @@
+         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+         String name = auth.getName();
+         User user = userService.getByEmail(name);
+-        validator.validate(passwordTrio.getOldPassword(), passwordTrio.getPassword(), passwordTrio.getConfPassword(), name, result);
++        validator.validate(passwordTrio, name, result);
+         if (result.hasErrors())
+             return "adminPage/editAdminProfile";
+ 
+\ No newline at end of file
+Index: src/main/java/com/ukmaSupport/controllers/EditProfile.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/com/ukmaSupport/controllers/EditProfile.java	(revision 32e00d3d374b04a91da57299baac03397de67f12)
++++ src/main/java/com/ukmaSupport/controllers/EditProfile.java	(revision )
+@@ -26,9 +26,17 @@
+     @Qualifier("passChangeValidator")
+     private PasswordChangeValidator validator;
+ 
++
++
+     @RequestMapping(method = RequestMethod.GET)
+     public String viewRegistration(Model model) {
+        PasswordTrio passwordTrio = new PasswordTrio();
++        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
++        String name = auth.getName();
++        Greetings greeting = new Greetings();
++        greeting.setName(name);
++        greeting.setEmail("mail");
++        model.addAttribute("greetings", greeting);
+         model.addAttribute("passChangeForm", passwordTrio);
+         return "userPage/editProfile";
+     }
+@@ -38,8 +46,12 @@
+     public String passChange(@ModelAttribute("passChangeForm") PasswordTrio passwordTrio, Model model, BindingResult result) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String name = auth.getName();
++       Greetings greeting = new Greetings();
++       greeting.setName(passwordTrio.getOldPassword());
++       model.addAttribute("greetings", greeting);
+        User user = userDao.getByEmail(name);
+-       validator.validate(passwordTrio.getOldPassword(), passwordTrio.getPassword(), passwordTrio.getConfPassword(), name, result);
++       validator.validate(passwordTrio, name, result);
++
+         if (result.hasErrors())
+             return "userPage/editProfile";
+ 
+@@ -50,4 +62,31 @@
+ 
+         return "userPage/passwordChangeSuccess";
+     }
++}
++class Greetings {
++
++    private String name;
++
++
++    public String getName() {
++        return name;
++    }
++
++    public void setName(String name) {
++        this.name = name;
++    }
++    private String email;
++
++
++    public String getEmail() {
++        return email;
++    }
++
++    public void setEmail(String email) {
++        this.email = email;
++    }
++
++
++
++
+ }
+\ No newline at end of file
+Index: src/main/webapp/WEB-INF/views/adminPage/editAdminProfile.jsp
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/webapp/WEB-INF/views/adminPage/editAdminProfile.jsp	(revision 32e00d3d374b04a91da57299baac03397de67f12)
++++ src/main/webapp/WEB-INF/views/adminPage/editAdminProfile.jsp	(revision )
+@@ -30,14 +30,7 @@
+             </div>
+             <div class="collapse navbar-collapse">
+                 <ul class="nav navbar-nav navbar-right">
+-                    <li class="dropdown">
+-                        <a class="dropdown-toggle menu-element" data-toggle="dropdown" href="#">Auditoriums<b
+-                                class="caret"></b></a>
+-                        <ul class="dropdown-menu">
+-                            <li><a class="menu-element-li" href="/createAuditorium">Add Auditorium</a></li>
+-                            <li><a class="menu-element-li" href="/auditoriums">Auditoriums</a></li>
+-                        </ul>
+-                    </li>
++                    <li><a id = "userHome " class="menu-element" href="/adminPage">Admin Home</a></li>
+                     <li class="dropdown">
+                         <a class="dropdown-toggle menu-element" data-toggle="dropdown" href="#">Users<b
+                                 class="caret"></b></a>

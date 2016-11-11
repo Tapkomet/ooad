@@ -1,0 +1,36 @@
+Index: src/main/webapp/WEB-INF/views/userPage/editProfile.jsp
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/webapp/WEB-INF/views/userPage/editProfile.jsp	(revision 805f1cce0ec77fc91dd654c30e1070cecb71bcc5)
++++ src/main/webapp/WEB-INF/views/userPage/editProfile.jsp	(revision )
+@@ -12,11 +12,13 @@
+     <script src="../../../resources/js/jquery-1.11.3.js"></script>
+     <script src="../../../resources/js/bootstrap.min.js"></script>
+     <script>
++
+         jQuery( function($) {
+             $('tbody tr[data-href]').addClass('clickable').click( function() {
+                 window.location = $(this).attr('data-href');
+             });
+         });
++        $
+     </script>
+ </head>
+ 
+@@ -30,7 +32,13 @@
+             </div>
+             <div class="collapse navbar-collapse">
+                 <ul class="nav navbar-nav navbar-right">
+-                    <li><a id = "userHome " class="menu-element" href="/userhome">User Home</a></li>
++                    <li class="dropdown">
++                        <a class="dropdown-toggle menu-element" data-toggle="dropdown" href="#"> My orders<b class="caret"></b></a>
++                        <ul class="dropdown-menu">
++                            <li class="drop-menu-element"><a class="menu-element-li" href="/userhome">Completed orders</a></li>
++                            <li class="drop-menu-element"><a class="menu-element-li" href="/userhome">Uncompleted orders</a></li>
++                        </ul>
++                    </li>
+                     <li><a id = "editProfile" class="menu-element" href="/editProfile">Edit profile</a></li>
+                     <li><a class="menu-element" href="#">Log out</a></li>
+                 </ul>
